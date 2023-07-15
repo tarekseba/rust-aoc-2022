@@ -1,7 +1,4 @@
 mod day1;
 fn main() {
-    match day1::run() {
-        Ok(cals) => println!("{cals}"),
-        Err(err) => println!("{err}"),
-    }
+    println!("{:?}", day1::run_part_2());
 }
