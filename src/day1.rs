@@ -3,7 +3,7 @@ use std::{fs, cmp::Ordering};
 pub fn run_part_1() -> Result<i32, String> {
     let mut scores: Vec<i32> = vec![];
     let mut index: usize = 0;
-    let input = fs::read_to_string("./day1.input").map_err(|err| err.to_string())?;
+    let input = fs::read_to_string("src/day1.input").map_err(|err| err.to_string())?;
     for line in input.lines() {
         if line.is_empty() {
             index += 1;
@@ -24,7 +24,7 @@ pub fn run_part_1() -> Result<i32, String> {
 pub fn run_part_2() -> Result<i32, String> {
     let mut scores: Vec<i32> = vec![];
     let mut index: usize = 0;
-    let input = fs::read_to_string("./day1.input").map_err(|err| err.to_string())?;
+    let input = fs::read_to_string("src/day1.input").map_err(|err| err.to_string())?;
     for line in input.lines() {
         if line.is_empty() {
             index += 1;
