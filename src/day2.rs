@@ -1,10 +1,10 @@
-use std::fs;
+use std::{fs, ops::Deref};
 
 const SAMPLE: &str = "A Y
 B X
 C Z";
 
-pub fn run() -> Result<i32, String> {
+pub fn run_part_one() -> Result<i32, String> {
     // let result = SAMPLE
     let result = fs::read_to_string("src/day2.input")
         .map_err(|err| err.to_string())?
@@ -15,11 +15,47 @@ pub fn run() -> Result<i32, String> {
     Ok(result)
 }
 
-#[derive(Debug)]
+pub fn run_part_two() -> Result<i32, String> {
+    // let result = SAMPLE
+    let result = fs::read_to_string("src/day2.input")
+        .map_err(|err| err.to_string())?
+        .lines()
+        .map(|value| value.trim().split(" ").collect::<Vec<&str>>())
+        .map(|vec| {
+            let hand_one = RockPaper::from(vec[0]);
+            let preferred_outcome = Outcome::from(vec[1]).chosen_outcome(&hand_one);
+            (hand_one, preferred_outcome)
+        })
+        .fold(0, |acc, (hand1, hand2)| acc + (hand1 + hand2));
+    Ok(result)
+}
+
+#[derive(Debug, Clone)]
 enum RockPaper {
-    Rock,
-    Paper,
-    Scisors,
+    Rock = 1,
+    Paper = 2,
+    Scisors = 3,
+}
+
+#[derive(PartialEq)]
+enum Outcome {
+    Win,
+    Lose,
+    Draw,
+}
+
+impl Outcome {
+    fn chosen_outcome(self, hand: &RockPaper) -> RockPaper {
+        match (self, hand) {
+            (Outcome::Win, RockPaper::Rock) => RockPaper::Paper,
+            (Outcome::Win, RockPaper::Paper) => RockPaper::Scisors,
+            (Outcome::Win, RockPaper::Scisors) => RockPaper::Rock,
+            (Outcome::Lose, RockPaper::Rock) => RockPaper::Scisors,
+            (Outcome::Lose, RockPaper::Paper) => RockPaper::Rock,
+            (Outcome::Lose, RockPaper::Scisors) => RockPaper::Paper,
+            (Outcome::Draw, x) => x.clone(),
+        }
+    }
 }
 
 impl From<&str> for RockPaper {
@@ -33,20 +69,29 @@ impl From<&str> for RockPaper {
     }
 }
 
+impl From<&str> for Outcome {
+    fn from(value: &str) -> Self {
+        match value {
+            "X" => Self::Lose,
+            "Y" => Self::Draw,
+            "Z" => Self::Win,
+            _ => Self::Win,
+        }
+    }
+}
+
 impl std::ops::Add<RockPaper> for RockPaper {
     type Output = i32;
 
     fn add(self, rhs: RockPaper) -> Self::Output {
-        match (self, rhs) {
-            (RockPaper::Rock, RockPaper::Rock) => 1 + 3,
-            (RockPaper::Rock, RockPaper::Paper) => 2 + 6,
-            (RockPaper::Rock, RockPaper::Scisors) => 3,
-            (RockPaper::Paper, RockPaper::Rock) => 1,
-            (RockPaper::Paper, RockPaper::Paper) => 2 + 3,
-            (RockPaper::Paper, RockPaper::Scisors) => 3 + 6,
-            (RockPaper::Scisors, RockPaper::Rock) => 1 + 6,
-            (RockPaper::Scisors, RockPaper::Paper) => 2,
-            (RockPaper::Scisors, RockPaper::Scisors) => 3 + 3,
-        }
+        (match (self, &rhs) {
+            (RockPaper::Rock, RockPaper::Paper) => 6,
+            (RockPaper::Rock, RockPaper::Scisors) => 0,
+            (RockPaper::Paper, RockPaper::Rock) => 0,
+            (RockPaper::Paper, RockPaper::Scisors) => 6,
+            (RockPaper::Scisors, RockPaper::Rock) => 6,
+            (RockPaper::Scisors, RockPaper::Paper) => 0,
+            _ => 3,
+        }) + rhs as i32
     }
 }
