@@ -38,3 +38,27 @@ pub fn run_part_one() {
         .sum::<u32>();
     println!("{result}");
 }
+
+pub fn run_part_two() -> Option<u32> {
+    let bags = fs::read_to_string("src/day3.input").unwrap();
+    let mut bags = bags.lines();
+    let mut sum = 0;
+    while let Some(backpack) = bags.next() {
+        sum += bags.next().and_then(|x| {
+            bags.next().and_then(|y| {
+                backpack
+                    .chars()
+                    .find(|item| {
+                        x.contains(|element| element == *item)
+                            && y.contains(|element| element == *item)
+                    })
+                    .map(|item| match item.is_lowercase() {
+                        true => LOWERCASE_PRIORITY + item as u8 - CHARCODE_LOWERBOUND,
+                        false => UPPERCASE_PRIORITY + item as u8 - CHARCODE_UPPERBOUND,
+                    })
+            })
+        })? as u32
+    }
+    println!("{sum}");
+    Some(sum)
+}
