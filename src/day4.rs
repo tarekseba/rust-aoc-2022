@@ -1,4 +1,4 @@
-use std::{fs, ops::Range, str::FromStr};
+use std::{fs, ops::RangeInclusive, str::FromStr};
 
 const SAMPLE: &str = "2-4,6-8
 2-3,4-5
@@ -8,7 +8,7 @@ const SAMPLE: &str = "2-4,6-8
 2-6,4-8";
 
 #[derive(Debug)]
-struct RangeWrapper<T>(Range<T>);
+struct RangeWrapper<T>(RangeInclusive<T>);
 
 pub fn run_part_one() {
     // let overlapping_ranges = SAMPLE
@@ -48,7 +48,7 @@ impl FromStr for RangeWrapper<u32> {
             .split("-")
             .map(|value| value.parse::<u32>().map_err(|err| err.to_string()))
             .collect::<Result<Vec<u32>, String>>()?;
-        Ok(RangeWrapper(vec_tuple[0]..vec_tuple[1]))
+        Ok(RangeWrapper(vec_tuple[0]..=vec_tuple[1]))
     }
 }
 
@@ -58,7 +58,7 @@ trait Overlap {
 
 impl Overlap for RangeWrapper<u32> {
     fn overlap(&self, t: &Self) -> bool {
-        self.0.start <= t.0.start && self.0.end >= t.0.end
+        self.0.contains(&t.0.start()) && self.0.contains(t.0.end())
     }
 }
 
@@ -68,7 +68,9 @@ trait PartialOverlap {
 
 impl PartialOverlap for RangeWrapper<u32> {
     fn partial_overlap(&self, t: &Self) -> bool {
-        self.0.end <= t.0.end && self.0.end >= t.0.start
-            || t.0.end <= self.0.end && t.0.end >= self.0.start
+        self.0.contains(t.0.end())
+            || self.0.contains(t.0.start())
+            || t.0.contains(self.0.end())
+            || t.0.contains(self.0.start())
     }
 }
