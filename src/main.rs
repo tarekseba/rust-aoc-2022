@@ -8,4 +8,5 @@ fn main() {
     println!("day 2: {:?}", day2::run_part_one());
     println!("day 2: {:?}", day2::run_part_two());
     day4::run_part_one();
+    day4::run_part_two();
 }
