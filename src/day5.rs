@@ -57,6 +57,55 @@ pub fn run_part_one() -> Result<(), String> {
     Ok(())
 }
 
+pub fn run_part_two() -> Result<(), String> {
+    let mut column_map: HashMap<u32, Vec<String>> = HashMap::new();
+    let parts = fs::read_to_string("src/day5.input").unwrap();
+    let parts = parts.split("\n\n").collect::<Vec<&str>>();
+    let (placement, moves) = (parts[0], parts[1]);
+    let mut placements = placement.lines().collect::<Vec<&str>>();
+    placements.pop();
+    let placements = placements
+        .iter()
+        .map(|line| parse_line(line))
+        .collect::<Vec<Vec<Option<String>>>>();
+    placements.into_iter().for_each(|line_vec| {
+        line_vec
+            .into_iter()
+            .enumerate()
+            .for_each(|(index, element)| {
+                if element.is_some() {
+                    let element = element.unwrap();
+                    let cloned_element = element.clone();
+                    column_map
+                        .entry((index + 1) as u32)
+                        .and_modify(|vec_val| vec_val.push(element))
+                        .or_insert(vec![cloned_element]);
+                }
+            })
+    });
+    column_map.iter_mut().for_each(|(_, value)| value.reverse());
+
+    let moves = moves
+        .lines()
+        .map(|line| line.parse::<Move>())
+        .collect::<Result<Vec<Move>, String>>()?;
+
+    moves
+        .iter()
+        .for_each(|mov| mov.execute_9001(&mut column_map));
+    let mut res = column_map
+        .iter()
+        .map(|(key, value)| (*key, value.last()))
+        .collect::<Vec<(u32, Option<&String>)>>();
+    res.sort();
+    let res = res.into_iter().fold(String::from(""), |mut acc, val| {
+        acc.push_str(val.1.unwrap());
+        acc
+    });
+    println!("{:?}", res.replace("[", "").replace("]", ""));
+    Ok(())
+}
+
 #[derive(Debug)]
 struct Move(u32, u32, u32);
 
@@ -70,9 +119,28 @@ impl Move {
                 let vec = from_col.split_off(from_col.len() - count as usize);
                 Some(vec)
             })
-            .and_then(|vec| {
+            .and_then(|mut vec| {
                 placements.get_mut(to).and_then(|vec_to| {
-                    vec.into_iter().rev().for_each(|value| vec_to.push(value));
+                    vec.reverse();
+                    vec_to.append(&mut vec);
+                    Some(())
+                });
+                Some(())
+            });
+    }
+
+    fn execute_9001(&self, placements: &mut HashMap<u32, Vec<String>>) {
+        let Move(count, from, to) = self;
+        let _ = placements
+            .get_mut(from)
+            .and_then(|from_col| {
+                let count = (*count).min(from_col.len() as u32);
+                let vec = from_col.drain(from_col.len() - count as usize..).collect();
+                Some(vec)
+            })
+            .and_then(|mut vec| {
+                placements.get_mut(to).and_then(|vec_to| {
+                    vec_to.append(&mut vec);
                     Some(())
                 });
                 Some(())
