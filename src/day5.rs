@@ -43,7 +43,9 @@ pub fn run_part_one() -> Result<(), String> {
         .map(|line| line.parse::<Move>())
         .collect::<Result<Vec<Move>, String>>()?;
 
-    moves.iter().for_each(|mov| { mov.execute(&mut column_map); });
+    moves.iter().for_each(|mov| {
+        mov.execute(&mut column_map);
+    });
     let mut res = column_map
         .iter()
         .map(|(key, value)| (*key, value.last()))
