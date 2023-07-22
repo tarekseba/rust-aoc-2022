@@ -43,7 +43,7 @@ pub fn run_part_one() -> Result<(), String> {
         .map(|line| line.parse::<Move>())
         .collect::<Result<Vec<Move>, String>>()?;
 
-    moves.iter().for_each(|mov| mov.execute(&mut column_map));
+    moves.iter().for_each(|mov| { mov.execute(&mut column_map); });
     let mut res = column_map
         .iter()
         .map(|(key, value)| (*key, value.last()))
@@ -92,7 +92,10 @@ pub fn run_part_two() -> Result<(), String> {
 
     moves
         .iter()
-        .for_each(|mov| mov.execute_9001(&mut column_map));
+        .for_each(|mov| match mov.execute_9001(&mut column_map) {
+            None => println!("an error occurred during move"),
+            _ => (),
+        });
     let mut res = column_map
         .iter()
         .map(|(key, value)| (*key, value.last()))
@@ -110,41 +113,31 @@ pub fn run_part_two() -> Result<(), String> {
 struct Move(u32, u32, u32);
 
 impl Move {
-    fn execute(&self, placements: &mut HashMap<u32, Vec<String>>) {
+    fn execute(&self, placements: &mut HashMap<u32, Vec<String>>) -> Option<()> {
         let Move(count, from, to) = self;
-        let _ = placements
-            .get_mut(from)
-            .and_then(|from_col| {
-                let count = (*count).min(from_col.len() as u32);
-                let vec = from_col.split_off(from_col.len() - count as usize);
-                Some(vec)
-            })
-            .and_then(|mut vec| {
-                placements.get_mut(to).and_then(|vec_to| {
-                    vec.reverse();
-                    vec_to.append(&mut vec);
-                    Some(())
-                });
-                Some(())
-            });
+        let mut to_move = placements.get_mut(from).and_then(|from_col| {
+            let count = (*count).min(from_col.len() as u32);
+            let vec = from_col.split_off(from_col.len() - count as usize);
+            Some(vec)
+        })?;
+        placements.get_mut(to).and_then(|vec_to| {
+            to_move.reverse();
+            vec_to.append(&mut to_move);
+            Some(())
+        })
     }
 
-    fn execute_9001(&self, placements: &mut HashMap<u32, Vec<String>>) {
+    fn execute_9001(&self, placements: &mut HashMap<u32, Vec<String>>) -> Option<()> {
         let Move(count, from, to) = self;
-        let _ = placements
-            .get_mut(from)
-            .and_then(|from_col| {
-                let count = (*count).min(from_col.len() as u32);
-                let vec = from_col.drain(from_col.len() - count as usize..).collect();
-                Some(vec)
-            })
-            .and_then(|mut vec| {
-                placements.get_mut(to).and_then(|vec_to| {
-                    vec_to.append(&mut vec);
-                    Some(())
-                });
-                Some(())
-            });
+        let mut to_move = placements.get_mut(from).and_then(|from_col| {
+            let count = (*count).min(from_col.len() as u32);
+            let vec = from_col.drain(from_col.len() - count as usize..).collect();
+            Some(vec)
+        })?;
+        placements.get_mut(to).and_then(|vec_to| {
+            vec_to.append(&mut to_move);
+            Some(())
+        })
     }
 }
 
