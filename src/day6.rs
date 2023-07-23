@@ -1,14 +1,20 @@
 use std::fs;
 
 pub fn run_part_one() {
-    let input = fs::read_to_string("src/day6.input").unwrap();
-    let count = input.chars().take_while(check_marker(4)).count();
+    let count = fs::read_to_string("src/day6.input")
+        .unwrap()
+        .chars()
+        .take_while(check_marker(4))
+        .count();
     println!("{}", count + 1)
 }
 
 pub fn run_part_two() {
-    let input = fs::read_to_string("src/day6.input").unwrap();
-    let count = input.chars().take_while(check_marker(14)).count();
+    let count = fs::read_to_string("src/day6.input")
+        .unwrap()
+        .chars()
+        .take_while(check_marker(14))
+        .count();
     println!("{}", count + 1)
 }
 
