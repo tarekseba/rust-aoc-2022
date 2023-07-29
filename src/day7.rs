@@ -1,4 +1,4 @@
-use std::{cell::RefCell, fs, path::PathBuf, rc::Rc};
+use std::{cell::RefCell, collections::HashMap, fs, path::PathBuf, rc::Rc};
 
 use nom::{
     branch::alt,
@@ -10,6 +10,8 @@ use nom::{
 };
 
 const MAX_SIZE: u32 = 100000;
+const MAX_DISK_SPACE: u32 = 70_000_000;
+const DISK_SPACE_NEEDED: u32 = 30_000_000;
 
 const SAMPLE: &str = "$ cd /
 $ ls
@@ -52,12 +54,58 @@ pub fn run_part_one() {
         .for_each(|command| iterator = command.execute(iterator.clone()));
     let mut sizes: Vec<u32> = vec![];
     root.borrow_mut().get_size(&mut sizes);
-    let cumulated_sizes = sizes.iter().fold(0, |mut acc, size| {
-        acc += size;
-        acc
-    });
+    let cumulated_sizes = sizes
+        .iter()
+        .filter(|size| **size < MAX_SIZE)
+        .fold(0, |mut acc, size| {
+            acc += size;
+            acc
+        });
     println!();
     println!("{}", cumulated_sizes);
+}
+
+pub fn run_part_two() {
+    let input = fs::read_to_string("src/day7.input").unwrap();
+    // let input = SAMPLE;
+    let (_, commands) = parse_commands(&input).unwrap();
+    let x = DirEntry::Dir(DirectoryEntry {
+        path: "/".into(),
+        size: None,
+        entries: vec![],
+        parent: None,
+    });
+    let root = Rc::new(RefCell::new(x));
+    let mut iterator = root.clone();
+    commands
+        .into_iter()
+        .for_each(|command| iterator = command.execute(iterator.clone()));
+    let mut sizes: Vec<u32> = vec![];
+    root.borrow_mut().get_size(&mut sizes);
+    println!("--------------------------------------------------");
+    let root_borrow = root.borrow();
+    let to_delete = root_borrow.size().map(|rootdir_size| {
+        let min_size = DISK_SPACE_NEEDED - (MAX_DISK_SPACE - rootdir_size);
+        let to_delete = sizes.iter().fold(None, |acc: Option<u32>, val| match acc {
+            Some(ref curr_val) => {
+                if *val < *curr_val && *val > min_size {
+                    Some(*val)
+                } else {
+                    acc
+                }
+            }
+            None => {
+                if *val > min_size {
+                    Some(*val)
+                } else {
+                    None
+                }
+            }
+        });
+        to_delete.unwrap()
+    });
+    println!("Directory to erase is : {:?}", to_delete);
+    println!("--------------------------------------------------");
 }
 
 enum DirEntry {
@@ -65,10 +113,19 @@ enum DirEntry {
     File(FileEntry),
 }
 
+impl DirEntry {
+    fn size(&self) -> Option<&u32> {
+        match self {
+            DirEntry::Dir(ref dir) => dir.size.as_ref(),
+            DirEntry::File(ref file) => Some(&file.size),
+        }
+    }
+}
+
 #[derive(Default, Debug)]
 struct DirectoryEntry {
     path: PathBuf,
-    size: Option<u32>,
+    pub size: Option<u32>,
     entries: Vec<Rc<RefCell<DirEntry>>>,
     parent: Option<Rc<RefCell<DirEntry>>>,
 }
@@ -113,9 +170,7 @@ impl GetSize for DirectoryEntry {
                         acc += size;
                         acc
                     });
-                if size <= MAX_SIZE {
-                    sizes.push(size);
-                }
+                sizes.push(size);
                 self.size = Some(size);
                 size
             }
@@ -137,6 +192,15 @@ impl GetSize for DirEntry {
 enum FileType<'a> {
     File { size: u32, name: &'a str },
     Dir { name: &'a str },
+}
+
+impl<'a> FileType<'a> {
+    fn is_dir(&self) -> bool {
+        match self {
+            FileType::File { size, name } => false,
+            _ => true,
+        }
+    }
 }
 
 struct FromWrapper(Vec<Rc<RefCell<DirEntry>>>);
@@ -257,7 +321,7 @@ fn parse_file_type(input: &str) -> IResult<&str, FileType> {
         Some(size) => {
             let (_, size) = u32(size)?;
             let (input, _) = multispace1(input)?;
-            let (input, name) = is_a("qwertyuiopasdfghjklzxcvbnm.")(input)?;
+            let (input, name) = is_a("abcdefghijklmnopqrstuvwxyz.")(input)?;
             (input, FileType::File { size, name })
         }
         None => {
@@ -287,3 +351,4 @@ impl std::fmt::Debug for DirEntry {
         }
     }
 }
+
