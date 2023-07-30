@@ -32,7 +32,7 @@ impl std::fmt::Debug for Forest {
 }
 
 impl Forest {
-    fn get_line(&self, sight: &Sight, line_index: usize, col_index: usize) -> Option<Vec<u8>> {
+    fn get_tree_line(&self, sight: &Sight, line_index: usize, col_index: usize) -> Option<Vec<u8>> {
         match sight {
             Sight::Left | Sight::Right => match self.0.get(line_index) {
                 None => None,
@@ -90,7 +90,7 @@ impl Forest {
         col_index: usize,
     ) -> Result<bool, String> {
         let line = self
-            .get_line(&sight, line_index, col_index)
+            .get_tree_line(&sight, line_index, col_index)
             .ok_or(format!("line or column not found for index {line_index}"))?;
         let target = match sight {
             Sight::Top | Sight::Bottom => line.get(line_index).unwrap(),
@@ -133,61 +133,73 @@ impl Forest {
         Ok(res)
     }
 
+    fn get_tree_line_and_target_tree(
+        &self,
+        sight: &Sight,
+        line_index: &usize,
+        col_index: &usize,
+    ) -> Option<(Vec<u8>, &u8)> {
+        let line = self.get_tree_line(sight, *line_index, *col_index)?;
+        let target = self.0.get(*line_index)?.get(*col_index)?;
+        Some((line, target))
+    }
+
     fn tree_score(&self, line_index: usize, col_index: usize) -> Result<usize, String> {
-        if line_index == 0 || col_index == 0 {
+        if line_index == 0
+            || col_index == 0
+            || line_index == self.0.len() - 1
+            || col_index == self.0.get(0).unwrap().len() - 1
+        {
             Ok(0)
         } else {
-            let line_top = self
-                .get_line(&Sight::Top, line_index, col_index)
-                .ok_or(format!("line or column not found for index {line_index}"))?;
-            let line_sides = self
-                .get_line(&Sight::Left, line_index, col_index)
-                .ok_or(format!("line or column not found for index {line_index}"))?;
-            let (target_top, target_sides) = (
-                line_top.get(line_index).unwrap(),
-                line_sides.get(col_index).unwrap(),
-            );
-            let score_right_left = {
-                let val_index = transpose_index(col_index, line_sides.len());
-                let mut left_scores = line_sides
-                    .iter()
-                    .skip(col_index + 1)
-                    .take_while(|&v| v < target_sides)
-                    .count();
-                let mut right_scores = line_sides
-                    .iter()
-                    .skip(val_index + 1)
-                    .take_while(|&v| v < target_sides)
-                    .count();
-                if left_scores + col_index + 1 <= line_sides.len() - 1 {
-                    left_scores += 1
-                }
-                if right_scores + val_index + 1 <= line_sides.len() - 1 {
-                    right_scores += 1
-                }
-                left_scores * right_scores
+            let count_no_rev = |vec: &Vec<u8>, target: &&u8, index: &usize| -> usize {
+                vec.iter()
+                    .skip(index + 1)
+                    .take_while(|&v| *v < **target)
+                    .count()
             };
-            let score_top_bottom = {
-                let val_index = transpose_index(line_index, line_top.len());
-                let mut top_scores = line_top
-                    .iter()
-                    .skip(line_index + 1)
-                    .take_while(|&v| v < target_top)
-                    .count();
-                let mut bottom_scores = line_top
+
+            let count_rev = |vec: &Vec<u8>, target: &&u8, index: &usize| -> usize {
+                (*vec)
                     .iter()
                     .rev()
-                    .skip(val_index + 1)
-                    .take_while(|&v| v < target_top)
-                    .count();
-                if top_scores + line_index + 1 <= line_top.len() - 1 {
-                    top_scores += 1
-                }
-                if bottom_scores + val_index + 1 <= line_top.len() - 1 {
-                    bottom_scores += 1
-                }
+                    .skip(index + 1)
+                    .take_while(|&v| *v < **target)
+                    .count()
+            };
+
+            let (line_top, target_top) = self
+                .get_tree_line_and_target_tree(&Sight::Top, &line_index, &col_index)
+                .ok_or(format!("line or column not found for index {line_index}"))?;
+
+            let (line_sides, target_sides) = self
+                .get_tree_line_and_target_tree(&Sight::Left, &line_index, &col_index)
+                .ok_or(format!("line or column not found for index {line_index}"))?;
+
+            let score_right_left = {
+                let val_index = transpose_index(col_index, line_sides.len());
+
+                let mut left_scores = count_no_rev(&line_sides, &target_sides, &col_index);
+                let mut right_scores = count_rev(&line_sides, &target_sides, &val_index);
+
+                left_scores += should_plus_one(left_scores, col_index, line_sides.len());
+                right_scores += should_plus_one(right_scores, val_index, line_sides.len());
+
+                left_scores * right_scores
+            };
+
+            let score_top_bottom = {
+                let val_index = transpose_index(line_index, line_top.len());
+
+                let mut top_scores = count_no_rev(&line_top, &target_top, &line_index);
+                let mut bottom_scores = count_rev(&line_top, &target_top, &val_index);
+
+                top_scores += should_plus_one(top_scores, line_index, line_top.len());
+                bottom_scores += should_plus_one(bottom_scores, val_index, line_top.len());
+
                 top_scores * bottom_scores
             };
+
             Ok(score_top_bottom * score_right_left)
         }
     }
@@ -206,6 +218,14 @@ impl Forest {
             .collect::<Result<Vec<Vec<usize>>, String>>()
             .unwrap();
         *res.iter().flatten().max().unwrap()
+    }
+}
+
+fn should_plus_one(score: usize, index: usize, line_length: usize) -> usize {
+    if score + index + 1 <= line_length - 1 {
+        1
+    } else {
+        0
     }
 }
 
