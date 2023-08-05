@@ -6,6 +6,7 @@ const LOWERCASE_PRIORITY: u8 = 1;
 const CHARCODE_LOWERBOUND: u8 = 97;
 const CHARCODE_UPPERBOUND: u8 = 65;
 
+#[allow(unused)]
 const SAMPLE: &str = "vJrwpWtwJgWrhcsFMMfFFhFp
 jqHRNqRjqzjGDLGLrsFMfFZSrLrFZsSL
 PmmdzqPrVvPwwTWBwg

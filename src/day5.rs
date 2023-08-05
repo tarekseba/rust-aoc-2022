@@ -1,5 +1,6 @@
 use std::{collections::HashMap, fs, str::FromStr};
 
+#[allow(unused)]
 const SAMPLE: &str = "    [D]    
 [N] [C]    
 [Z] [M] [P]

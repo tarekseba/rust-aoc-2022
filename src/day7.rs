@@ -13,6 +13,7 @@ const MAX_SIZE: u32 = 100000;
 const MAX_DISK_SPACE: u32 = 70_000_000;
 const DISK_SPACE_NEEDED: u32 = 30_000_000;
 
+#[allow(unused)]
 const SAMPLE: &str = "$ cd /
 $ ls
 dir a

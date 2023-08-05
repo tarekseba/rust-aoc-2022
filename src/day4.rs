@@ -1,5 +1,6 @@
 use std::{fs, ops::RangeInclusive, str::FromStr};
 
+#[allow(unused)]
 const SAMPLE: &str = "2-4,6-8
 2-3,4-5
 5-7,7-9

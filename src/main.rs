@@ -26,4 +26,5 @@ fn main() {
     println!("----------DAY-8------------");
     day8::run_both_parts();
     day9::run_part_one();
+    day10::run_part_one();
 }

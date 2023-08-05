@@ -1,5 +1,6 @@
-use std::{fs, ops::Deref};
+use std::fs;
 
+#[allow(unused)]
 const SAMPLE: &str = "A Y
 B X
 C Z";

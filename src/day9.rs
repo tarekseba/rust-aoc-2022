@@ -111,6 +111,7 @@ impl Playground {
     }
 }
 
+#[allow(unused)]
 const SAMPLE: &str = "R 4
 U 4
 L 3

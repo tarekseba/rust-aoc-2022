@@ -1,4 +1,4 @@
-use std::{fs, cmp::Ordering};
+use std::fs;
 
 pub fn run_part_1() -> Result<i32, String> {
     let mut scores: Vec<i32> = vec![];

@@ -1,5 +1,6 @@
 use std::{fs, num::ParseIntError, str::FromStr};
 
+#[allow(unused)]
 const SAMPLE: &str = "30373
 25512
 65332
