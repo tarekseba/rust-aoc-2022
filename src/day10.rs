@@ -90,6 +90,75 @@ pub fn run_part_one() -> Result<(), String> {
     });
     println!("------------------------DAY 10------------------------------");
     println!("Sum : {:?}", x_map.iter().map(|x| x.1).sum::<i32>());
-    println!("------------------------------------------------------------");
+    println!("------------------------Part 2-------------------------------");
+    Ok(())
+}
+
+fn draw(screen: &mut Vec<Vec<char>>, mut cycle: usize, register: i32, instruction: &Instruction) {
+    let reg: i32 = register;
+    screen.get_mut(cycle / 40).unwrap();
+    match instruction {
+        Instruction::Add(_) => {
+            if (reg - 1..=reg + 1).contains(&(cycle as i32 % 40)) {
+                let character = screen
+                    .get_mut(cycle / 40)
+                    .expect(&((cycle / 40).to_string() + "Panicked first"))
+                    .get_mut(cycle % 40)
+                    .expect(&((cycle % 40).to_string() + "Panicked because out of bounds"));
+                *character = '#'
+            }
+            cycle += 1;
+            if (reg - 1..=reg + 1).contains(&(cycle as i32 % 40)) {
+                let character = screen
+                    .get_mut(cycle / 40)
+                    .expect(&((cycle / 40).to_string() + "Panicked second"))
+                    .get_mut(cycle % 40)
+                    .expect("Panicked because out of bounds");
+                *character = '#'
+            }
+        }
+        Instruction::Noop => {
+            let character = screen
+                .get_mut(cycle / 40)
+                .expect(&((cycle / 40).to_string() + "Panicked second"))
+                .get_mut(cycle % 40)
+                .expect("Panicked because out of bounds");
+            *character = '#'
+        }
+    }
+}
+
+pub fn run_part_two() -> Result<(), String> {
+    let mut cycle: usize = 0;
+    let mut register: i32 = 1;
+    let x = vec!['4'; 4];
+    let s: String = x.iter().collect();
+    let mut x: Vec<Vec<char>> = vec![
+        vec!['.'; 40],
+        vec!['.'; 40],
+        vec!['.'; 40],
+        vec!['.'; 40],
+        vec!['.'; 40],
+        vec!['.'; 40],
+    ];
+    x.iter_mut().for_each(|vec| vec.fill('.'));
+
+    let input = fs::read_to_string("src/day10.input").unwrap();
+    let instructions = parse_instructions(&input).map_err(|err| err.to_string())?.1;
+
+    instructions.iter().for_each(|instr| {
+        draw(&mut x, cycle, register, instr);
+        register = instr + register;
+        cycle += instr.value();
+    });
+
+    println!(
+        "{:?}",
+        x.into_iter().for_each(|v| {
+            let s = v.into_iter().collect::<String>();
+            println!("{s}");
+        })
+    );
+    println!("----------------------------------------------------------");
     Ok(())
 }
