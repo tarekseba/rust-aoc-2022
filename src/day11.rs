@@ -12,12 +12,12 @@ use nom::{
 
 #[derive(Debug)]
 enum Val {
-    Value(u32),
+    Value(u128),
     Old,
 }
 
 impl Val {
-    fn value(&self, old: u32) -> u32 {
+    fn value(&self, old: u128) -> u128 {
         use Val::*;
         match self {
             Value(ref n) => n.clone(),
@@ -41,7 +41,7 @@ impl Op {
         }
     }
 
-    fn eval(&self, lhs: u32) -> u32 {
+    fn eval(&self, lhs: u128) -> u128 {
         use Op::*;
         match self {
             Add(num) => lhs + num.value(lhs),
@@ -52,23 +52,23 @@ impl Op {
 
 #[derive(Debug)]
 struct Monkey {
-    items: Vec<u32>,
+    items: Vec<u128>,
     operation: Op,
-    divisible_by: u32,
-    if_true: u32,
-    if_false: u32,
+    divisible_by: u128,
+    if_true: u128,
+    if_false: u128,
 }
 
-fn parse_items(input: &str) -> IResult<&str, Vec<u32>> {
+fn parse_items(input: &str) -> IResult<&str, Vec<u128>> {
     let (input, _) = multispace1(input)?;
     let (input, _) = tag("Starting items: ")(input)?;
-    separated_list0(tag(", "), character::complete::u32)(input)
+    separated_list0(tag(", "), character::complete::u128)(input)
 }
 
 fn parse_value(input: &str) -> IResult<&str, Val> {
     alt((
         tag("old").map(|_| Val::Old),
-        nom::character::complete::u32.map(|number| Val::Value(number)),
+        nom::character::complete::u128.map(|number| Val::Value(number)),
     ))(input)
 }
 
@@ -81,26 +81,26 @@ fn parse_operation(input: &str) -> IResult<&str, Op> {
     )(input)
 }
 
-fn parse_condition(input: &str) -> IResult<&str, (u32, u32, u32)> {
+fn parse_condition(input: &str) -> IResult<&str, (u128, u128, u128)> {
     let (input, _) = multispace1(input)?;
     let (input, divisible_by) =
-        preceded(tag("Test: divisible by "), nom::character::complete::u32)(input)?;
+        preceded(tag("Test: divisible by "), nom::character::complete::u128)(input)?;
     let (input, _) = multispace1(input)?;
     let (input, if_true) = preceded(
         tag("If true: throw to monkey "),
-        nom::character::complete::u32,
+        nom::character::complete::u128,
     )(input)?;
     let (input, _) = multispace1(input)?;
     let (input, if_false) = preceded(
         tag("If false: throw to monkey "),
-        nom::character::complete::u32,
+        nom::character::complete::u128,
     )(input)?;
     Ok((input, (divisible_by, if_true, if_false)))
 }
 
 fn parse_monkey(input: &str) -> IResult<&str, Monkey> {
     let (input, _) = tag("Monkey ")(input)?;
-    let (input, _) = nom::character::complete::u32(input)?;
+    let (input, _) = nom::character::complete::u128(input)?;
     let (input, _) = tag(":")(input)?;
     let (input, items) = parse_items(input)?;
     let (input, op) = parse_operation(input)?;
@@ -189,6 +189,54 @@ pub fn run_part_one() -> Result<(), String> {
     }
     let mut vec = h_map.into_iter().map(|(_, y)| y).collect::<Vec<usize>>();
     vec.sort_by(|item1, item2| item2.cmp(item1));
+    println!("------------------------DAY 11------------------------------");
     println!("{:?}", vec.iter().take(2).product::<usize>());
+    println!("------------------------PART 2------------------------------");
+    Ok(())
+}
+
+pub fn run_part_two() -> Result<(), String> {
+    // let input = SAMPLE;
+    let input = &fs::read_to_string("src/day11.input").unwrap();
+
+    let mut monkeys = parse_monkeys(input).map_err(|err| err.to_string())?.1;
+
+    let all_products = monkeys.iter().map(|monkey| monkey.divisible_by).product::<u128>();
+
+    let mut h_map: HashMap<usize, usize> = HashMap::new();
+
+    for _ in 0..10000 {
+        for index in 0..monkeys.len() {
+            let item_count = monkeys.get(index).unwrap().items.len();
+            h_map
+                .entry(index)
+                .and_modify(|x| *x = *x + item_count)
+                .or_insert(item_count);
+
+            while monkeys.get(index).unwrap().items.len() > 0 {
+                let monkey = monkeys.get_mut(index).unwrap();
+
+                let mut item = monkey.items.pop().unwrap();
+                item = monkey.operation.eval(item) % all_products;
+
+                let divisible = item % monkey.divisible_by == 0;
+
+                let if_true = monkey.if_true;
+
+                let if_false = monkey.if_false;
+
+                if divisible {
+                    println!("{:?}", item % all_products);
+                    monkeys.get_mut(if_true as usize).unwrap().items.push(item);
+                } else {
+                    monkeys.get_mut(if_false as usize).unwrap().items.push(item)
+                }
+            }
+        }
+    }
+    let mut vec = h_map.into_iter().map(|(_, y)| y).collect::<Vec<usize>>();
+    vec.sort_by(|item1, item2| item2.cmp(item1));
+    println!("{:?}", vec.iter().take(2).product::<usize>());
+    println!("------------------------------------------------------------");
     Ok(())
 }
