@@ -1,5 +1,4 @@
 mod day1;
-mod day10;
 mod day2;
 mod day3;
 mod day4;
@@ -8,6 +7,8 @@ mod day6;
 mod day7;
 mod day8;
 mod day9;
+mod day10;
+mod day11;
 
 fn main() {
     println!("day 1: {:?}", day1::run_part_2());
@@ -30,4 +31,5 @@ fn main() {
     day9::run_part_one();
     day10::run_part_one();
     day10::run_part_two();
+    day11::run_part_one();
 }

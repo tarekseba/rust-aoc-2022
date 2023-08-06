@@ -131,8 +131,6 @@ fn draw(screen: &mut Vec<Vec<char>>, mut cycle: usize, register: i32, instructio
 pub fn run_part_two() -> Result<(), String> {
     let mut cycle: usize = 0;
     let mut register: i32 = 1;
-    let x = vec!['4'; 4];
-    let s: String = x.iter().collect();
     let mut x: Vec<Vec<char>> = vec![
         vec!['.'; 40],
         vec!['.'; 40],
