@@ -67,7 +67,96 @@ pub fn run_part_one() -> Option<()> {
         );
     }
 
-    println!("{:?}", distances.get(&(x_target, y_target)));
+    println!("------------------------DAY 12------------------------------");
+    println!(
+        "Minimum steps starting from 'S' {:?}",
+        distances.get(&(x_target, y_target))
+    );
+
+    Some(())
+}
+
+pub fn run_part_two() -> Option<()> {
+    // let input = SAMPLE;
+    let input = fs::read_to_string("src/day12.input").unwrap();
+
+    let mut grid = input
+        .lines()
+        .map(|line| line.chars().collect::<Vec<char>>())
+        .collect::<Vec<Vec<char>>>();
+
+    let (y_target, v): (usize, &mut Vec<char>) =
+        grid.iter_mut().enumerate().find(|l| l.1.contains(&'E'))?;
+
+    let (x_target, character) = v.iter_mut().enumerate().find(|(_, c)| *c == &'E')?;
+    *character = '{';
+
+    let (y_start, v): (usize, &mut Vec<char>) = grid
+        .iter_mut()
+        .enumerate()
+        .find(|(_, c)| c.contains(&'S'))?;
+    let (x_start, _) = v.iter_mut().enumerate().find(|(_, c)| *c == &'S')?;
+
+    grid[y_start][x_start] = 'a';
+
+    let starting_points = grid
+        .iter()
+        .enumerate()
+        .fold(vec![], |mut acc, (y_index, e)| {
+            let mut x = e.iter().enumerate().fold(&mut acc, |acc, (index, c)| {
+                if *c == 'a' {
+                    acc.push((index, y_index));
+                    acc
+                } else {
+                    acc
+                }
+            });
+            acc
+        });
+
+    let mut distances_results: Vec<Option<usize>> = Vec::new();
+    starting_points.iter().for_each(|starting_point| {
+        let mut visited: HashSet<(usize, usize)> = HashSet::new();
+        let mut distances: Distances = HashMap::new();
+        let mut stack: Stack = VecDeque::from(vec![]);
+        let mut unique_stack: Visited = HashSet::new();
+
+        let (y_len, x_len) = (grid.len(), grid[0].len());
+
+        distances.insert(*starting_point, 0);
+        stack.push_back(*starting_point);
+
+        while !stack.is_empty() {
+            let point = stack.pop_front().unwrap();
+            visited.insert(point);
+            let distance = distances.get(&point);
+            let distance = distance.unwrap();
+            check_each_neighbor(
+                point,
+                &grid,
+                distance.clone(),
+                &mut stack,
+                &mut unique_stack,
+                &mut distances,
+                &visited,
+                x_len,
+                y_len,
+            );
+        }
+        distances_results.push(
+            distances
+                .get(&(x_target, y_target))
+                .map(|number| number.to_owned()),
+        );
+    });
+
+    println!("------------------------PART 2------------------------------");
+    println!(
+        "Minimum steps starting form any 'a' {:?}",
+        distances_results.iter().flatten().min()
+    );
+    println!("------------------------------------------------------------");
+
     Some(())
 }
 
