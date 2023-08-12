@@ -1,13 +1,16 @@
+use std::{cmp::Ordering, fs};
+
 use nom::{
     branch::alt,
     bytes::complete::tag,
     character::complete,
     combinator::{map, opt},
-    multi::{many0, many1},
-    sequence::preceded,
+    multi::many0,
+    sequence::{preceded, separated_pair},
     IResult,
 };
 
+#[allow(unused)]
 const SAMPLE: &str = "[1,1,3,1,1]
 [1,1,5,1,1]
 
@@ -38,8 +41,60 @@ enum List {
     Cons(Vec<List>),
 }
 
+impl PartialEq for List {
+    fn eq(&self, other: &Self) -> bool {
+        match self {
+            List::Value(ref lhs) => match other {
+                List::Value(ref rhs) => lhs == rhs,
+                List::Cons(_) => {
+                    let transformed_lhs = List::Cons(vec![List::Value(lhs.clone())]);
+                    transformed_lhs == *other
+                }
+            },
+            List::Cons(ref lhs) => match other {
+                List::Value(ref rhs) => {
+                    let transformed_rhs = List::Cons(vec![List::Value(rhs.clone())]);
+                    *self == transformed_rhs
+                }
+                List::Cons(ref rhs) => {
+                    lhs.iter().zip(rhs.iter()).all(|(l, r)| l == r) && lhs.len() == rhs.len()
+                }
+            },
+        }
+    }
+}
+
+impl Eq for List {}
+
+impl Ord for List {
+    fn cmp(&self, other: &Self) -> Ordering {
+        match self {
+            List::Value(ref lhs) => match other {
+                List::Value(ref rhs) => lhs.cmp(rhs),
+                List::Cons(_) => {
+                    let transformed_lhs = List::Cons(vec![List::Value(lhs.clone())]);
+                    transformed_lhs.cmp(other)
+                }
+            },
+            List::Cons(ref lhs) => match other {
+                List::Value(ref rhs) => {
+                    let transformed_rhs = List::Cons(vec![List::Value(rhs.clone())]);
+                    self.cmp(&transformed_rhs)
+                }
+                List::Cons(ref rhs) => lhs.cmp(&rhs),
+            },
+        }
+    }
+}
+
+impl PartialOrd for List {
+    fn partial_cmp(&self, other: &Self) -> Option<std::cmp::Ordering> {
+        Some(self.cmp(other))
+    }
+}
+
 fn parse_values(input: &str) -> IResult<&str, Vec<List>> {
-    println!("inside parse_values => input : {input}");
+    // println!("inside parse_values => input : {input}");
     let (input, val) = many0(preceded(
         opt(tag(",")),
         alt((map(complete::u32, |i| List::Value(i)), parse_list)),
@@ -48,7 +103,7 @@ fn parse_values(input: &str) -> IResult<&str, Vec<List>> {
 }
 
 fn parse_list(input: &str) -> IResult<&str, List> {
-    println!("inside parse_list => input   : {input}");
+    // println!("inside parse_list => input   : {input}");
     let (input, _) = tag("[")(input)?;
     let (input, values) = parse_values(input)?;
     let (input, _) = tag("]")(input)?;
@@ -56,36 +111,33 @@ fn parse_list(input: &str) -> IResult<&str, List> {
 }
 
 pub fn run_part_one() -> Result<(), String> {
-    let input = SAMPLE;
+    // let input = SAMPLE;
+    let input = fs::read_to_string("src/day13.input").unwrap();
     let splitted_input = input.split("\n\n").collect::<Vec<&str>>();
-    println!("{:?}", splitted_input);
 
     let entries = splitted_input
         .iter()
         .map(|pair| {
-            pair.split("\n")
-                .map(|e| {
-                    parse_list(e)
-                        .map_err(|err| err.to_string())
-                        .map(|(input, el)| el)
-                })
-                .collect::<Result<Vec<List>, String>>()
+            separated_pair(parse_list, tag("\n"), parse_list)(pair)
+                .map_err(|e| e.to_string())
+                .map(|e| e.1)
         })
-        .collect::<Result<Vec<Vec<List>>, String>>()?;
+        .collect::<Result<Vec<(List, List)>, String>>()?;
 
-    entries.iter().for_each(|el| {
-        println!("\n");
-        el.iter().for_each(|e| println!("{:?}", e));
-    });
+    let results = entries
+        .iter()
+        .enumerate()
+        .map(|(index, pair)| (index, pair.0.cmp(&pair.1)))
+        .filter_map(|(index, cmp)| {
+            if cmp != Ordering::Greater {
+                Some(index + 1)
+            } else {
+                None
+            }
+        })
+        .sum::<usize>();
+    println!("--------------------------------- DAY 13 -----------------------------------");
+    println!("{:?}", results);
 
-    let x = &entries[1];
-    let (x, y) = (&x[0], &x[1]);
-    match x {
-        List::Cons(v1) => match y {
-            List::Cons(v2) => v1.iter().zip(v2.iter()).for_each(|e| println!("{:?}", e)),
-            _ => panic!("F to pay respect"),
-        },
-        _ => panic!("F to pay respect"),
-    }
     Ok(())
 }
