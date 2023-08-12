@@ -39,4 +39,5 @@ fn main() {
     day12::run_part_one();
     day12::run_part_two();
     day13::run_part_one();
+    day13::run_part_two();
 }

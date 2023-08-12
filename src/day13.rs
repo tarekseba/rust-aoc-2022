@@ -35,7 +35,7 @@ const SAMPLE: &str = "[1,1,3,1,1]
 [1,[2,[3,[4,[5,6,7]]]],8,9]
 [1,[2,[3,[4,[5,6,0]]]],8,9]";
 
-#[derive(Debug)]
+#[derive(Debug, Clone)]
 enum List {
     Value(u32),
     Cons(Vec<List>),
@@ -138,6 +138,48 @@ pub fn run_part_one() -> Result<(), String> {
         .sum::<usize>();
     println!("--------------------------------- DAY 13 -----------------------------------");
     println!("{:?}", results);
+    println!("--------------------------------- PART 2 -----------------------------------");
 
+    Ok(())
+}
+
+pub fn run_part_two() -> Result<(), String> {
+    // let input = SAMPLE;
+    let input = fs::read_to_string("src/day13.input").unwrap();
+    let splitted_input = input.split("\n\n").collect::<Vec<&str>>();
+
+    let entries = splitted_input
+        .iter()
+        .map(|pair| {
+            separated_pair(parse_list, tag("\n"), parse_list)(pair)
+                .map_err(|e| e.to_string())
+                .map(|e| vec![e.1 .0, e.1 .1])
+        })
+        .collect::<Result<Vec<Vec<List>>, String>>()?;
+
+    let mut entries = entries.iter().flatten().collect::<Vec<&List>>();
+
+    let (el1, el2) = (
+        List::Cons(vec![List::Cons(vec![List::Value(2)])]),
+        List::Cons(vec![List::Cons(vec![List::Value(6)])]),
+    );
+
+    entries.push(&el1);
+    entries.push(&el2);
+    entries.sort();
+
+    let product: usize = entries
+        .iter()
+        .enumerate()
+        .fold(vec![], |mut acc, (index, e)| {
+            if **e == el1 || **e == el2 {
+                acc.push(index + 1)
+            }
+            acc
+        })
+        .iter()
+        .product();
+    println!("{:?}", product);
+    println!("{}", "-".repeat(75));
     Ok(())
 }
