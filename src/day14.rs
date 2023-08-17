@@ -46,26 +46,42 @@ fn build_iten(canvas: &mut Canvas, points: &Vec<Point>) {
     }
 }
 
-fn can_move(canvas: &Canvas, (x, y): Point) -> Option<Point> {
-    if canvas.get(&(x, y + 1)).is_none() {
+fn can_move(
+    canvas: &Canvas,
+    (x, y): Point,
+    predicate: impl Fn(bool, &i32) -> bool,
+) -> Option<Point> {
+    if predicate(canvas.get(&(x, y + 1)).is_none(), &y) {
         return Some((x, y + 1));
-    } else if canvas.get(&(x - 1, y + 1)).is_none() {
+    } else if predicate(canvas.get(&(x - 1, y + 1)).is_none(), &y) {
         return Some((x - 1, y + 1));
-    } else if canvas.get(&(x + 1, y + 1)).is_none() {
+    } else if predicate(canvas.get(&(x + 1, y + 1)).is_none(), &y) {
         return Some((x + 1, y + 1));
     }
     None
 }
 
-fn play(canvas: &mut Canvas, max_depth: i32) -> Option<()> {
+fn play(canvas: &mut Canvas, max_depth: i32, predicate: impl Fn(bool, &i32) -> bool) -> Option<()> {
     let mut start = (500, 0);
-    while let Some((x, y)) = can_move(canvas, start) {
+    while let Some((x, y)) = can_move(canvas, start, &predicate) {
         if y >= max_depth {
             return Some(());
         }
         start = (x, y);
     }
     canvas.insert(start);
+    None
+}
+
+fn play_bottom(canvas: &mut Canvas, predicate: impl Fn(bool, &i32) -> bool) -> Option<()> {
+    let mut start = (500, 0);
+    while let Some((x, y)) = can_move(canvas, start, &predicate) {
+        start = (x, y);
+    }
+    canvas.insert(start);
+    if start.1 == 0 {
+        return Some(());
+    }
     None
 }
 
@@ -90,16 +106,54 @@ pub fn run_part_one() -> Result<(), String> {
         .max()
         .expect("failed to find max_depth");
 
+    let predicate = move |val: bool, _y: &i32| val;
+
     loop {
-        match play(&mut canvas, max_depth) {
+        match play(&mut canvas, max_depth, predicate) {
+            Some(_) => break,
+            None => continue,
+        }
+    }
+
+    println!("--------------------------------- DAY 14 -----------------------------------");
+    println!(
+        "max number of sand points is : {}",
+        canvas.len() - start_points
+    );
+    println!("--------------------------------- PART 2 -----------------------------------");
+    Ok(())
+}
+
+pub fn run_part_two() -> Result<(), String> {
+    // let input = SAMPLE;
+    let input = fs::read_to_string("src/day14.input").map_err(|e| e.to_string())?;
+    let lines = parse_lines(&input).map_err(|err| err.to_string())?.1;
+
+    let mut canvas: Canvas = Canvas::new();
+    lines
+        .iter()
+        .for_each(|vec_of_pairs| build_iten(&mut canvas, vec_of_pairs));
+
+    let start_points = canvas.len();
+    let max_depth = canvas
+        .iter()
+        .map(|x| x.1)
+        .max()
+        .expect("failed to find max_depth");
+
+    let predicate = move |val: bool, y: &i32| val && y + 1 < max_depth + 2;
+
+    loop {
+        match play_bottom(&mut canvas, predicate) {
             Some(_) => break,
             None => continue,
         }
     }
 
     println!(
-        "max number of sand points is : {}",
+        "max number of sand points with floor is : {}",
         canvas.len() - start_points
     );
+    println!("----------------------------------------------------------------------------");
     Ok(())
 }
